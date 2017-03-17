@@ -58,6 +58,14 @@ event listeners can be added and removed even
 from within an EventListener, while events are being
 dispatched.
 @js NA
+--2017-03-15--
+在cocos2d 3.x的版本中关于事件从触发到监听，主要涉及到了3个大的方向：
+1，CCEvent：事件类型。
+   
+2，CCEventDispatcher：事件分发器。
+   用于注册移除和分发事件的监听处理。
+3，CCEventListener：事件监听器。
+   事件监听器实现了各种事件触发后对应的逻辑；由事件分发器调用对应的事件监听器。
 */
 class CC_DLL EventDispatcher : public Ref
 {

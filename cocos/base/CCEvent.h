@@ -40,7 +40,9 @@ class Node;
 
 /** @class Event
  * @brief Base class of all kinds of events.
- 事件类型
+   触发的事件源类型
+   一个事件类型用一个Event的子类描述，它也是事件分发到订阅者时事件源传递给订阅者的参数，
+   里面包含了一些处理该事件相关的信息，例如：EventAcceleration就包含了x,y,z3个方向的加速度数据。
  */
 class CC_DLL Event : public Ref
 {
@@ -48,12 +50,12 @@ public:
     /** Type Event type.*/
     enum class Type
     {
-        TOUCH,
-        KEYBOARD,
-        ACCELERATION,
-        MOUSE,
-        FOCUS,
-        GAME_CONTROLLER,
+        TOUCH,           // 触摸事件
+        KEYBOARD,        // 键盘事件
+        ACCELERATION,    // 加速器事件
+        MOUSE,           // 鼠标事件
+        FOCUS,           // 焦点事件
+        GAME_CONTROLLER, // 自定义事件
         CUSTOM
     };
     
@@ -77,6 +79,10 @@ public:
     
     /** Checks whether the event has been stopped.
      *
+     isStopped定义该event是否已经停止，当一个event发生停止时，
+     与其相关的Listener都要停止callback的调用；
+     currentTarget是与该Event相关联的node。
+     
      * @return True if the event has been stopped.
      */
     inline bool isStopped() const { return _isStopped; };

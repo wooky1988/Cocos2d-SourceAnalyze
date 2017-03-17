@@ -43,7 +43,15 @@ class Event;
 class Node;
 
 /** @class EventListener
-任何一个事件监听(订阅者)都是EventListener的子类
+任何一个事件监听(订阅者)都是EventListener的子类；如果某个处理程序关心某个事件
+，则创建一个对应的Eventlistener的子类的实例。
+为了响应事件，首先你要创建一个 EventListener，有五种不同的 EventListener.
+1，EventListenerTouch 响应触控事件
+2，EventListenerKeyboard 响应键盘事件
+3，EventListenerAcceleration 响应加速器事件
+4，EventListenMouse 响应鼠标事件
+5，EventListenerCustom 响应应用程序自定义的事件
+
  *  @brief The base class of event listener.
  *  If you need custom listener which with different callback, you need to inherit this class.
  *  For instance, you could refer to EventListenerAcceleration, EventListenerKeyboard, EventListenerTouchOneByOne, EventListenerCustom.
@@ -55,15 +63,14 @@ public:
     /** Type Event type.订阅者的类型*/
     enum class Type
     {
-        UNKNOWN,
-        TOUCH_ONE_BY_ONE,
-        TOUCH_ALL_AT_ONCE,
-        KEYBOARD,
-        MOUSE,
-        ACCELERATION,
-        FOCUS,
-		GAME_CONTROLLER,
-        CUSTOM
+        UNKNOWN,            // 未知的事件监听器
+        TOUCH_ONE_BY_ONE,   // 单点触摸事件监听器
+        TOUCH_ALL_AT_ONCE,  // 多点触摸事件监听器
+        KEYBOARD,           // 键盘事件监听器
+        MOUSE,              // 鼠标事件监听器
+        ACCELERATION,       // 加速器事件监听器
+        FOCUS,              // 焦点事件监听器
+        CUSTOM              // 自定义事件监听器
     };
 
     typedef std::string ListenerID;
@@ -102,6 +109,10 @@ public:
      *        An event listener can receive events when it is enabled and is not paused.
      *        paused state is always false when it is a fixed priority listener.
      *
+
+      1.一个Listener想接收事件必须是enabled true 并且 paused false。
+      2.值得注意的是，pause的变量专门是为了scenGraph类的事件存在的（后续有说明），
+      而且一个Node的onEnter和onExit 事件会影响到与Node相关的该类事件的pause状态。
      * @param enabled True if enables the listener.
      */
     inline void setEnabled(bool enabled) { _isEnabled = enabled; };
@@ -127,7 +138,9 @@ protected:
     /** Checks whether the listener is paused */
     inline bool isPaused() const { return _paused; };
 
-    /** Marks the listener was registered by EventDispatcher */
+    /** Marks the listener was registered by EventDispatcher 
+      标记这个订阅者是否在EventDispatcher 中被订阅了。
+    */
     inline void setRegistered(bool registered) { _isRegistered = registered; };
 
     /** Checks whether the listener was registered by EventDispatcher */
@@ -165,14 +178,24 @@ protected:
     ///////////////
     // Properties
     //////////////一个回调函数
+    //是绑定于该Listener的callback function，该func的声明使用了c++11的新特性。
     std::function<void(Event*)> _onEvent;   /// Event callback function
 
-    Type _type;                             /// Event listener type
+    Type _type;      
+                           /// Event listener type
+    //这是该类型事件的标识符。除了EventCustomListener的ListerID是与name相关的，
+    //其余的ListenerID都是固定的，用于标识该类EventListener。
     ListenerID _listenerID;                 /// Event listener ID
-    bool _isRegistered;                     /// Whether the listener has been added to dispatcher.
 
+    //变量非常重要，如果他没有被注册，则他的事件不会触发。
+    bool _isRegistered; 
+                        /// Whether the listener has been added to dispatcher.
+
+    //优先级代表了响应一个事件时的顺序，该值越低，越先响应。
     int   _fixedPriority;   // The higher the number, the higher the priority, 0 is for scene graph base priority.
-    Node* _node;            // scene graph based priority
+    
+    //代表了与该listener相关的node，用于 scene graph类的事件响应
+    Node* _node;            // scene graph based priority//
     bool _paused;           // Whether the listener is paused
     bool _isEnabled;        // Whether the listener is enabled
     friend class EventDispatcher;

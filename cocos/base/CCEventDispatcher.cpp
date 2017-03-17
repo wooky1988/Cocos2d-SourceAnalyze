@@ -122,6 +122,7 @@ EventDispatcher::EventListenerVector::~EventListenerVector()
 
 size_t EventDispatcher::EventListenerVector::size() const
 {
+    //内部listener集合的大小是两个listener集合大小的总和。
     size_t ret = 0;
     if (_sceneGraphListeners)
         ret += _sceneGraphListeners->size();
@@ -148,7 +149,7 @@ void EventDispatcher::EventListenerVector::push_back(EventListener* listener)
              std::count(_fixedListeners->begin(), _fixedListeners->end(), listener) == 0,
              "Listener should not be added twice!");
 #endif
-
+    //查看listener的priority，如果为0，加入sceneGraphList，否则加入fixedList
     if (listener->getFixedPriority() == 0)
     {
         if (_sceneGraphListeners == nullptr)
@@ -325,10 +326,12 @@ void EventDispatcher::resumeEventListenersForTarget(Node* target, bool recursive
         auto listeners = listenerIter->second;
         for (auto& l : *listeners)
         {
+            //恢复Node的运行状态 
             l->setPaused(false);
         }
     }
-    
+
+    // toAdd List中也要进行恢复  
     for (auto& listener : _toAddedListeners)
     {
         if (listener->getAssociatedNode() == target)
@@ -336,7 +339,7 @@ void EventDispatcher::resumeEventListenersForTarget(Node* target, bool recursive
             listener->setPaused(false);
         }
     }
-
+    //将该Node 与 node的child 都放到dirtyNode中，来记录与event相关的node
     setDirtyForNode(target);
     
     if (recursive)
@@ -439,6 +442,7 @@ void EventDispatcher::dissociateNodeAndEventListener(Node* node, EventListener* 
 
 void EventDispatcher::addEventListener(EventListener* listener)
 {
+    //如果当前Dispatcher正在进行事件Dispatch，则放到toAddList中。
     if (_inDispatch == 0)
     {
         forceAddEventListener(listener);
@@ -455,7 +459,10 @@ void EventDispatcher::forceAddEventListener(EventListener* listener)
 {
     EventListenerVector* listeners = nullptr;
     EventListener::ListenerID listenerID = listener->getListenerID();
+    //2017-03-17
+    //找到该类eventlistener的vector，此处的vector是EventVector,还未进行优先级排序的vector。 
     auto itr = _listenerMap.find(listenerID);
+    //如果没有找到，则需要向map中添加一个pair
     if (itr == _listenerMap.end())
     {
         
@@ -466,13 +473,21 @@ void EventDispatcher::forceAddEventListener(EventListener* listener)
     {
         listeners = itr->second;
     }
-    
+    //将该类别listenerpush_back进去（这个函数调用的是EventVector的pushback方法） 
     listeners->push_back(listener);
-    
+
+     //如果优先级是0，则设置为graph。
     if (listener->getFixedPriority() == 0)
-    {
+    {   
+        //设置该listenerID的DirtyFlag  
+        //(setDirty函数可以这样理解，每个ListenerID都有特定的dirtyFlag，
+        //每次进行add操作后，都要更新该ID的flag)
         setDirty(listenerID, DirtyFlag::SCENE_GRAPH_PRIORITY);
         
+        //如果是sceneGraph类的事件，则需要处理两个方面：  
+        //1.将node 与event 关联  
+        //2.如果该node是运行中的，则需要恢复其事件（因为默认的sceneGraph listener的状态时pause）  
+        //增加该listener与node的关联  
         auto node = listener->getAssociatedNode();
         CCASSERT(node != nullptr, "Invalid scene graph priority!");
         
@@ -570,12 +585,15 @@ void EventDispatcher::debugCheckNodeHasNoEventListenersOnDestruction(Node* node)
 void EventDispatcher::addEventListenerWithFixedPriority(EventListener* listener, int fixedPriority)
 {
     CCASSERT(listener, "Invalid parameters.");
+    //一个事件只能被注册一次
     CCASSERT(!listener->isRegistered(), "The listener has been registered.");
+    //Fixed类型的事件优先级不能是0
     CCASSERT(fixedPriority != 0, "0 priority is forbidden for fixed priority since it's used for scene graph based priority.");
     
+    //检测监听事件是否可用
     if (!listener->checkAvailable())
         return;
-    
+    //设定相关属性
     listener->setAssociatedNode(nullptr);
     listener->setFixedPriority(fixedPriority);
     listener->setRegistered(true);
@@ -586,7 +604,9 @@ void EventDispatcher::addEventListenerWithFixedPriority(EventListener* listener,
 
 EventListenerCustom* EventDispatcher::addCustomEventListener(const std::string &eventName, const std::function<void(EventCustom*)>& callback)
 {
+    //自定义的事件，唯一标示使用string字符串的方式。
     EventListenerCustom *listener = EventListenerCustom::create(eventName, callback);
+    //默认自定义事件的优先级是1
     addEventListenerWithFixedPriority(listener, 1);
     return listener;
 }
@@ -608,13 +628,15 @@ void EventDispatcher::removeEventListener(EventListener* listener)
             if (l == listener)
             {
                 CC_SAFE_RETAIN(l);
+                //找到后的处理方法，标记状态位，并处理关联Node 
                 l->setRegistered(false);
                 if (l->getAssociatedNode() != nullptr)
                 {
                     dissociateNodeAndEventListener(l->getAssociatedNode(), l);
                     l->setAssociatedNode(nullptr);  // nullptr out the node pointer so we don't have any dangling pointers to destroyed nodes.
                 }
-                
+                 //当前没有在分发事件 
+                 //则直接从listeners中移除该listener（因为标记了状态未，如果此时在分发事件，则会等结束后再移除）
                 if (_inDispatch == 0)
                 {
                     listeners->erase(iter);
@@ -626,13 +648,13 @@ void EventDispatcher::removeEventListener(EventListener* listener)
             }
         }
     };
-    
+    //从listenersmap 中遍历所有，拿出所有的vector 
     for (auto iter = _listenerMap.begin(); iter != _listenerMap.end();)
     {
         auto listeners = iter->second;
         auto fixedPriorityListeners = listeners->getFixedPriorityListeners();
         auto sceneGraphPriorityListeners = listeners->getSceneGraphPriorityListeners();
-
+        //从graphList中寻找。找到后需要更新该listenerID的dirty flag。  
         removeListenerInVector(sceneGraphPriorityListeners);
         if (isFound)
         {
@@ -659,7 +681,8 @@ void EventDispatcher::removeEventListener(EventListener* listener)
                  std::count(fixedPriorityListeners->begin(), fixedPriorityListeners->end(), listener) == 0,
                  "Listener should be in no lists after this is done if we're not currently in dispatch mode.");
 #endif
-
+        //如果vector在删除后是空的，则需要移除该vector，
+        //并且将相应的listenerID从_priorityDirtyFlagMap中移除。
         if (iter->second->empty())
         {
             _priorityDirtyFlagMap.erase(listener->getListenerID());
@@ -727,6 +750,7 @@ void EventDispatcher::dispatchEventToListeners(EventListenerVector* listeners, c
     auto fixedPriorityListeners = listeners->getFixedPriorityListeners();
     auto sceneGraphPriorityListeners = listeners->getSceneGraphPriorityListeners();
     
+     //整体操作流程分为三个部分，处理优先级<0，=0,>0三个部分  
     ssize_t i = 0;
     // priority < 0
     if (fixedPriorityListeners)
@@ -738,6 +762,8 @@ void EventDispatcher::dispatchEventToListeners(EventListenerVector* listeners, c
             for (; i < listeners->getGt0Index(); ++i)
             {
                 auto l = fixedPriorityListeners->at(i);
+                // onEvent（l）的操作调用了event的callBack，并且会返回是否停止，如果停止后，则将shouldStopPropagation标记为true  
+                //在其后面的listeners则不会响应到该事件（这里可以看出触摸事件是如何被吞噬的）
                 if (l->isEnabled() && !l->isPaused() && l->isRegistered() && onEvent(l))
                 {
                     shouldStopPropagation = true;
@@ -772,7 +798,8 @@ void EventDispatcher::dispatchEventToListeners(EventListenerVector* listeners, c
             for (; i < size; ++i)
             {
                 auto l = fixedPriorityListeners->at(i);
-                
+                // onEvent（l）的操作调用了event的callBack，并且会返回是否停止，如果停止后，则将shouldStopPropagation标记为true  
+                //在其后面的listeners则不会响应到该事件（这里可以看出触摸事件是如何被吞噬的）
                 if (l->isEnabled() && !l->isPaused() && l->isRegistered() && onEvent(l))
                 {
                     shouldStopPropagation = true;
@@ -787,36 +814,41 @@ void EventDispatcher::dispatchEvent(Event* event)
 {
     if (!_isEnabled)
         return;
-    
+    //为dirtyNodesVector中的dirtyNode更新Scene Flag。 
     updateDirtyFlagForSceneGraph();
     
     
     DispatchGuard guard(_inDispatch);
-    
+    //特殊touch事件，转到特殊的touch事件处理 
     if (event->getType() == Event::Type::TOUCH)
     {
         dispatchTouchEvent(static_cast<EventTouch*>(event));
         return;
     }
-    
+
+    //根据事件的类型，获取事件的ID  
     auto listenerID = __getListenerID(event);
     
+     //根据事件ID，将该类事件进行排序（先响应谁）
     sortEventListeners(listenerID);
     
     auto iter = _listenerMap.find(listenerID);
     if (iter != _listenerMap.end())
     {
         auto listeners = iter->second;
-        
+        //该类事件的lambda函数 
         auto onEvent = [&event](EventListener* listener) -> bool{
+            //设置event的target
             event->setCurrentTarget(listener->getAssociatedNode());
+            //调用响应函数
             listener->_onEvent(event);
+            //返回是否已经停止
             return event->isStopped();
         };
-        
+        //将该类事件的listeners 和 该类事件的 lambda函数传给该函数  
         dispatchEventToListeners(listeners, onEvent);
     }
-    
+    //更新该事件相关的listener 
     updateListeners(event);
 }
 
@@ -827,9 +859,14 @@ void EventDispatcher::dispatchCustomEvent(const std::string &eventName, void *op
     dispatchEvent(&ev);
 }
 
-
+//结合以下的dispatchEventToListeners的源码分析，可以看出新版本的OneByOne touch机制是这样的：  
+//1.listener根据Node的优先级排序后，依次响应。值得注意的是，新版本的优先级是根据Node的global Zorder来的，而不是2.x的触摸优先级。  
+//2.当TouchEvent Began来了之后，所有的listener会依次影响Touch Began。然后再依次响应Touch Move...而不是一个listener响应完  
+//began move end之后 轮到下一个listener响应的顺序。  
+//3.吞噬操作只有发生在began return true后才可以发生 
 void EventDispatcher::dispatchTouchEvent(EventTouch* event)
 {
+    //先将EventListeners排序
     sortEventListeners(EventListenerTouchOneByOne::LISTENER_ID);
     sortEventListeners(EventListenerTouchAllAtOnce::LISTENER_ID);
     
@@ -959,6 +996,7 @@ void EventDispatcher::dispatchTouchEvent(EventTouch* event)
     //
     // process standard handlers 2nd
     //
+    //值得注意的是被吞噬的touch也不会被AllAtOnce响应到
     if (allAtOnceListeners && mutableTouches.size() > 0)
     {
         
@@ -1393,6 +1431,7 @@ bool EventDispatcher::isEnabled() const
 void EventDispatcher::setDirtyForNode(Node* node)
 {
     // Mark the node dirty only when there is an eventlistener associated with it. 
+    //2017-03-17,所谓dirtyNode其实就是还没有和EventListener相关联的node
     if (_nodeListenersMap.find(node) != _nodeListenersMap.end())
     {
         _dirtyNodes.insert(node);
