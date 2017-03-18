@@ -37,6 +37,9 @@ NS_CC_BEGIN
 
 
 /**
+   用于管理autorelease对象的池。
+   AutoreleasePool中存放着被显示调用autorealse的ref，
+   并且在每一帧过后调用其clear函数，显示的调用存放在其中的ref的realse函数，然后清空自身。
  * A pool for managing autorlease objects.
  * @js NA
  */
@@ -69,6 +72,9 @@ public:
     /**
      * Add a given object to this autorelease pool.
      *
+     同一个对象可能会被多次添加到autorelease pool中。
+     当这个池被损坏时，相应池里对象的release()方法会被调用，调用次数和它被添加的
+     次数一致。
      * The same object may be added several times to an autorelease pool. When the
      * pool is destructed, the object's `Ref::release()` method will be called
      * the same times as it was added.
@@ -104,6 +110,7 @@ public:
     /**
      * Checks whether the autorelease pool contains the specified object.
      *
+     判断指定对象是否存在于内存池中
      * @param object The object to be checked.
      * @return True if the autorelease pool contains the object, false if not
      * @js NA
@@ -124,8 +131,10 @@ public:
     
 private:
     /**
+     管理对象池的底层数组
      * The underlying array of object managed by the pool.
      *
+     虽然对象在被添加的时候，数组对这个对象做了一次retains的操作，
      * Although Array retains the object once when an object is added, proper
      * Ref::release() is called outside the array to make sure that the pool
      * does not affect the managed object's reference count. So an object can
@@ -148,6 +157,7 @@ private:
 
 /**
  * @cond
+ PoolManager管理着所有的AutoReleasePool，可能有一个或者多个AutoReleasePool.
  */
 class CC_DLL PoolManager
 {
@@ -162,8 +172,11 @@ public:
     /**
      * Get current auto release pool, there is at least one auto release pool that created by engine.
      * You can create your own auto release pool at demand, which will be put into auto releae pool stack.
+       获取当前的对象的管理池，在引擎中至少有一个内存管理池，如果需要的话你也可以创建自己的内存管理池
+       创建的管理池，将会被放在release pool的堆栈中。
      */
     AutoreleasePool *getCurrentPool() const;
+
     //判断AutoreleasePool是否有obj
     bool isObjectInPools(Ref* obj) const;
 

@@ -1377,9 +1377,10 @@ void DisplayLinkDirector::mainLoop()
     {
         drawScene();//OpenGL 主循环 绘制场景
      
-        // release the objects 
-        //清除当前内存池中对象，即池中每一个对象--_referenceCount   
-        //每一次循环清理一次内存池,整个内存管理的动力所在。
+        // release the objects        
+        //在每一次循环中都会清理一次内存池,整个内存管理的动力所在。
+        //调用clear()方法时，会调用对应池中对象的release()方法，完成引用计数的减1处理。
+        //即池中每一个对象的 _referenceCount = _referenceCount - 1  
         PoolManager::getInstance()->getCurrentPool()->clear();
     }
 }

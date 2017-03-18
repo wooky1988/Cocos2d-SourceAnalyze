@@ -60,12 +60,20 @@ void AutoreleasePool::addObject(Ref* object)
     _managedObjectArray.push_back(object);
 }
 
+//调用其包含的ref的release函数，然后将自己的managedObject清空。
 void AutoreleasePool::clear()
 {
 #if defined(COCOS2D_DEBUG) && (COCOS2D_DEBUG > 0)
     _isClearing = true;
 #endif
+    //声明一个空vector，默认的size和capacity为0。
     std::vector<Ref*> releasings;
+    //_managedObjectArray数据被清空,
+    //调用vector的swap的用法，首先交换两个内存中的数值，
+    //然后清空vector申请的内存(而clear却不一定)。
+    //这里清空_managedObjectArray数据后，
+    //之前保存的Ref对象如果在第一次的帧刷新结束后引用计数大于0，
+    //则将在内存中被保留下来。
     releasings.swap(_managedObjectArray);
     for (const auto &obj : releasings)
     {
@@ -105,7 +113,7 @@ void AutoreleasePool::dump()
 //--------------------------------------------------------------------
 
 PoolManager* PoolManager::s_singleInstance = nullptr;
-
+//单例模式
 PoolManager* PoolManager::getInstance()
 {
     if (s_singleInstance == nullptr)

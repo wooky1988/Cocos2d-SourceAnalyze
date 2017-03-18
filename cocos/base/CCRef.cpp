@@ -39,7 +39,7 @@ static void trackRef(Ref* ref);
 static void untrackRef(Ref* ref);
 #endif
 
-
+//创建一个Ref对象时，即调用构造函数时默认的引用计数数值为1
 Ref::Ref()
 : _referenceCount(1) // when the Ref is created, the reference count of it is 1
 {
@@ -79,13 +79,13 @@ Ref::~Ref()
         untrackRef(this);
 #endif
 }
-
+//调用retain方法时，默认计数数值加1。
 void Ref::retain()
 {
     CCASSERT(_referenceCount > 0, "reference count should be greater than 0");
     ++_referenceCount;
 }
-
+//调用release方法时，默认计数数值减1。
 void Ref::release()
 {
     CCASSERT(_referenceCount > 0, "reference count should be greater than 0");
@@ -95,6 +95,7 @@ void Ref::release()
     {
 #if defined(COCOS2D_DEBUG) && (COCOS2D_DEBUG > 0)
         auto poolManager = PoolManager::getInstance();
+        //如果对象没有被清除且对象依旧存在于对象池中，此时报个断言错误信息
         if (!poolManager->getCurrentPool()->isClearing() && poolManager->isObjectInPools(this))
         {
             // Trigger an assert if the reference count is 0 but the Ref is still in autorelease pool.
@@ -131,10 +132,11 @@ void Ref::release()
 #if CC_REF_LEAK_DETECTION
         untrackRef(this);
 #endif
+        //当引用计数变成0的时候，默认delete自己.
         delete this;
     }
 }
-
+//调用该方法将对象添加到内存对象的管理池中。
 Ref* Ref::autorelease()
 {
     PoolManager::getInstance()->getCurrentPool()->addObject(this);

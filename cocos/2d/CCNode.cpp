@@ -157,6 +157,13 @@ Node::Node(void)
     _transform = _inverse = _additionalTransform = Mat4::IDENTITY;
 }
 
+//在Node的create中，调用了new（Count设置为1）后，
+//立即调用了autoRelease，将其放入AutoreleasePool中。
+//所以当你使用了create之后，请不要在使用release或者Autorelease，除非你手动了retain一次。
+//但是当你把一个node1加入到另一个node2的时候，你可以理解为此时node1的refereneceCount增加了一次，
+//但是你不需要做任何额外的操作。因为当node1被remove或者即使没有remove操作，
+//当node2析构的时候（会将他的child的count减1）。
+//也就是说，整个引擎会自动管理referenceCount，只要你不要手动的retain。
 Node * Node::create()
 {
     Node * ret = new (std::nothrow) Node();
@@ -1043,7 +1050,8 @@ void Node::addChild(Node* child, int localZOrder, const std::string &name)
     
     addChildHelper(child, localZOrder, INVALID_TAG, name, false);
 }
-
+//程序在调用addChild时，最后都会调用到addChildHelper方法里，在调用insertChild方法
+//将子节点存入到Vector容器中，同时将传入的对象retain一次。此时引用计数做了个加1的操作。
 void Node::addChildHelper(Node* child, int localZOrder, int tag, const std::string &name, bool setTag)
 {
     if (_children.empty())
@@ -1246,8 +1254,18 @@ void Node::detachChild(Node *child, ssize_t childIndex, bool doCleanup)
     }
 
     // set parent nil at the end
+    //最后设置父节点为空！
     child->setParent(nullptr);
-
+    //removeChild的时候，调用到了detachChild()方法，在该方法里最终还是调用了对应
+    //vector的erase()方法，在该方法里执行了一下操作，release方法执行时，引用计数减1.
+    /** 
+     iterator erase(const_iterator position)
+    {
+        CCASSERT(position != _data.cend(), "Invalid iterator!");
+        position->second->release();
+        return _data.erase(position);
+    }
+    */
     _children.erase(childIndex);
 }
 
@@ -1257,7 +1275,8 @@ void Node::insertChild(Node* child, int z)
 {
     _transformUpdated = true;
     _reorderChildDirty = true;
-    _children.pushBack(child);
+    //_children是cocos为Ref量身定制的向量Vector<T>，这个向量只能给继承了Ref的类来使用。
+    _children.pushBack(child);//调用CCVector.h里封装的Vector容器进行存储。
     child->_localZOrder = z;
 }
 

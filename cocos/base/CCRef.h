@@ -109,7 +109,8 @@ public:
      *
      * If the reference count reaches 0 after the descrement, this Ref is
      * destructed.
-     * 将自身加入到内存池中，执行一次clear后，调用release()
+     该方法只是将指向该对象的指针加入到一个自动释放池中，并不会改变该对象的引用计数。
+     在将自身加入到内存池中，CCDirector中执行一次clear后，会调用相应的release()方法。
      * @returns The Ref itself.
      *
      * @see AutoreleasePool, retain, release
@@ -146,6 +147,7 @@ public:
 
 protected:
     /// count of references
+    //重要的成员变量：_referenceCount，在构造函数中被置为1
     unsigned int _referenceCount;
 
     friend class AutoreleasePool;

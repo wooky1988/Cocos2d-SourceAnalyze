@@ -61,7 +61,7 @@ dispatched.
 --2017-03-15--
 在cocos2d 3.x的版本中关于事件从触发到监听，主要涉及到了3个大的方向：
 1，CCEvent：事件类型。
-   
+
 2，CCEventDispatcher：事件分发器。
    用于注册移除和分发事件的监听处理。
 3，CCEventListener：事件监听器。
@@ -73,6 +73,7 @@ public:
     // Adds event listener.
     
     /** Adds a event listener for a specified event with the priority of scene graph.
+     添加一个针对特定事件的事件监听器，其优先级数值是使用对应场景绘制图的优先级数值来确定的。
      *  @param listener The listener of a specified event.
      *  @param node The priority of the listener is based on the draw order of this node.
      *  @note  The priority of scene graph will be fixed value 0. So the order of listener item
@@ -90,6 +91,8 @@ public:
 
     /** Adds a Custom event listener.
      It will use a fixed priority of 1.
+     添加自定义的事件监听器，默认的优先级顺序是1。自定义的事件监听器对应的listenerID就是
+     String类型的eventName.
      * @param eventName A given name of the event.
      * @param callback A given callback method that associated the event name.
      * @return the generated event. Needed in order to remove the event from the dispather
@@ -299,7 +302,9 @@ protected:
     /** Walks though scene graph to get the draw order for each node, it's called before sorting event listener with scene graph priority */
     void visitTarget(Node* node, bool isRootNode);
     
-    /** Listeners map */
+    /** Listeners map 
+    事件订阅者的map集合
+    */
     std::unordered_map<EventListener::ListenerID, EventListenerVector*> _listenerMap;
     
     /** The map of dirty flag */
