@@ -534,6 +534,8 @@ FileUtils::~FileUtils()
 
 bool FileUtils::init()
 {
+    //_defaultResRootPath就是之前我们说的默认的“资源根目录”。而且，注释中明确说明，_defaultResRootPath的值跟具体的平台相关，
+    //所以我们应该到FileUtils-win32中查找Win32平台默认的_defaultResRootPath值。
     _searchPathArray.push_back(_defaultResRootPath);
     _searchResolutionsOrderArray.push_back("");
     return true;
@@ -748,12 +750,29 @@ std::string FileUtils::fullPathForFilename(const std::string &filename) const
     }
 
     // Already Cached ?
+    //01，首先，利用unordered_map的find方法，判断该文件是不是已经加载到_fullPathCache中.
+    //如果在_fullPathCache中，则直接返回。
     auto cacheIter = _fullPathCache.find(filename);
     if(cacheIter != _fullPathCache.end())
     {
         return cacheIter->second;
     }
-    
+    /*02，如果不在_fullPathCache中，则继续执行如下步骤。
+    首先，在_searchPathArray优先查找路径信息，然后再遍历_searchResolutionsOrderArray，
+    最后以：_searchPathArray[i] + _searchResolutionsOrderArray[j] + filename方法查找文件，
+    找到文件以后再次存入_fullPathCache中。
+    细节问题：
+    我们虽然把图片放在Resources目录下，但是，当发布到不同平台的时候，
+    Cocos2d-x会把相应的文件拷贝到平台对应的目录下，Class目录也是这样
+
+
+
+
+
+
+
+
+    */
     // Get the new file name.
     const std::string newFilename( getNewFilename(filename) );
     

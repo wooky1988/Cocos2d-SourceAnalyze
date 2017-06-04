@@ -21,6 +21,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+应用启动时，调用Appdelegate类，其实内部调用了父类CCApplication中相应的方法
+因为要实现跨平台的功能逻辑，所以在CCApplication中会以不同的平台去判定调用
+哪一个平台下的CCApplication的子类，已完成对应平台下关于路径，绘制等相应平台
+才有的功能，所以在CCApplication中有如下的宏定义判断以区分不同的平台。
 ****************************************************************************/
 
 #ifndef __PLATFORM_CCAPPLICATION_H__

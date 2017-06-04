@@ -55,7 +55,7 @@ static inline std::string convertPathFormatToUnixStyle(const std::string& path)
     }
     return ret;
 }
-
+//_checkPath是一个静态函数，可以看到了Win32平台获取路径的实现。最后存储到了s_resourcePath中。
 static void _checkPath()
 {
     if (0 == s_resourcePath.length())
@@ -94,7 +94,9 @@ FileUtilsWin32::FileUtilsWin32()
 
 bool FileUtilsWin32::init()
 {
+    //首先调用自身的初始化方法，然后调用父类的初始化方法
     _checkPath();
+    //这里初始化父类里的_defaultResRootPath变量，然后调用父类的init方法完成_searchPathArray索引路径的初始化
     _defaultResRootPath = s_resourcePath;
     return FileUtils::init();
 }
