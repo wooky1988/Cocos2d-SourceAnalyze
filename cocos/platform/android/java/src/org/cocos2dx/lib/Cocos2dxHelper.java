@@ -89,6 +89,8 @@ public class Cocos2dxHelper {
                 Cocos2dxHelper.sFileDirectory = CocosPlayClient.getGameRoot();
             }
             else {
+                //初始化时初始的文件可写目录是fileDir也就是：data/data/包名/file路径而不是
+                //英文文档下的caches路径。
                 Cocos2dxHelper.sFileDirectory = activity.getFilesDir().getAbsolutePath();
             }
             

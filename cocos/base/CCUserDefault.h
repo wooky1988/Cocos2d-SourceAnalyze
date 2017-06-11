@@ -43,6 +43,17 @@ NS_CC_BEGIN
  * 
  * It supports the following base types:
  * bool, int, float, double, string
+ 作为一个轻量级的数据库，可支持bool, int, float, double, string等数值类型。
+ UserDefault在实现上使用了单例模式，getInstance方法返回唯一的实例。
+ setXXXForKey用来设置指定类型的数据，getXXXForKey用来获取指定类型的数据。
+
+总结：
+1，UserDefault类通过XML文件来将游戏数据保存本地，该文件名称为UserDefault.xml。
+   内部调用的tinyXml对对应的xml进行操作处理。
+2，每次调用setXXXForKey和getXXXForKey函数时，UserDefault总是需要经历读入解析UserDefault.xml文件，
+   查找参数key指定的结点，进行读/写操作，保存文件（如果前面是写操作） 等步骤。
+3，UserDefault虽然提供了flush函数，但是该函数并未进行任何操作。
+   UserDefault在每次的setXXXForKey的最后写回文件
  */
 class CC_DLL UserDefault
 {

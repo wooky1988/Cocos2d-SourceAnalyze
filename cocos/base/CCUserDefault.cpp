@@ -406,12 +406,19 @@ void UserDefault::setDataForKey(const char* pKey, const Data& value) {
 
 UserDefault* UserDefault::getInstance()
 {
+	//当用户第一次调用getInstance函数时候，！_userDefault判断必然为真，所以执行了if语句里面的代码。
     if (!_userDefault)
     {
+    	//01,初始化文件的存放路径
         initXMLFilePath();
 
         // only create xml file one time
         // the file exists after the program exit
+        /*
+          只创建xml一次，对应的xml文件在程序退出时保存
+        */
+          //接下来isXMLFileExist方法判断_filePath 路径上的xml文件是否存在，
+          //如果不存在则调用createXMLFile方法创建一个新的xml文件。
         if ((!isXMLFileExist()) && (!createXMLFile()))
         {
             return nullptr;
@@ -453,11 +460,15 @@ bool UserDefault::isXMLFileExist()
 {
     return FileUtils::getInstance()->isFileExist(_filePath);
 }
-
+/*
+在win32中调用UserDefault::getInstance()->getXMLFilePath()函数输出如下：
+C:/Users/fred/AppData/Local/CocosTest/UserDefault.xml
+*/
 void UserDefault::initXMLFilePath()
 {
     if (! _isFilePathInitialized)
     {
+    	//初始化文件的存放路径
         _filePath += FileUtils::getInstance()->getWritablePath() + XML_FILE_NAME;
         _isFilePathInitialized = true;
     }    
@@ -466,6 +477,7 @@ void UserDefault::initXMLFilePath()
 // create new xml file
 bool UserDefault::createXMLFile()
 {
+	//01,Cocos2d-x使用tinyxml2来操作xml文件。
 	bool bRet = false;  
     tinyxml2::XMLDocument *pDoc = new tinyxml2::XMLDocument(); 
     if (nullptr==pDoc)  
@@ -478,6 +490,11 @@ bool UserDefault::createXMLFile()
 		return false;  
 	}  
 	pDoc->LinkEndChild(pDeclaration); 
+	//02,createXMLFile函数创建了一个xml文件并设置了头节点，然后保存在_filePath指定的路径上。
+	/*创建的初始化xml文件如下：
+      <?xml version="1.0" encoding="UTF-8"?>
+      <userDefaultRoot/>
+	*/
 	tinyxml2::XMLElement *pRootEle = pDoc->NewElement(USERDEFAULT_ROOT_NAME);  
 	if (nullptr==pRootEle)  
 	{  

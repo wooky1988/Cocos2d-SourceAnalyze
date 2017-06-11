@@ -186,7 +186,7 @@ bool FileUtilsAndroid::isFileExistInternal(const std::string& strFilePath) const
     }
     return bFound;
 }
-
+//判断strPath是不是绝对路径,如果是绝对路径返回true,否则返回false
 bool FileUtilsAndroid::isAbsolutePath(const std::string& strPath) const
 {
     // On Android, there are two situations for full path.
@@ -307,7 +307,7 @@ Data FileUtilsAndroid::getData(const std::string& filename, bool forString)
 
     return ret;
 }
-
+//将读取的文件数据放入字符串中返回
 std::string FileUtilsAndroid::getStringFromFile(const std::string& filename)
 {
     Data data = getData(filename, true);
@@ -411,11 +411,17 @@ unsigned char* FileUtilsAndroid::getFileData(const std::string& filename, const 
     }
     return data;
 }
-
+//如果是VS环境下可读写路径即是对应的项目相关的Debug.win32目录下
 string FileUtilsAndroid::getWritablePath() const
 {
     // Fix for Nexus 10 (Android 4.2 multi-user environment)
     // the path is retrieved through Java Context.getCacheDir() method
+    //对应的路径可以通过java中的Context.getCacheDir()方法得到，data/data/包名/cache对应路径、
+    /************************************************************
+    这局官方注释其实是有问题的，通过源码跟踪你会发现，Android系统下调用可写路径时
+    是通过JNI方式：getFileDirectoryJNI，调到Java_org_cocos2dx_lib_Cocos2dxHelper下
+    然后再调用到Java端的Cocos2dxHelp下的getCocos2dxWritablePath方法。
+    ************************************************************/
     string dir("");
     string tmp = getFileDirectoryJNI();
 

@@ -866,7 +866,9 @@ void FileUtils::setDefaultResourceRootPath(const std::string& path)
 {
     _defaultResRootPath = path;
 }
-
+//searchPaths中可以是一个绝对路径也可以是一个相对路径.
+//如果是相对路径就在前面加上_defaultResRootPath.
+//然后顺序加入到_searchPathArray中去.
 void FileUtils::setSearchPaths(const std::vector<std::string>& searchPaths)
 {
     bool existDefaultRootPath = false;
@@ -900,7 +902,7 @@ void FileUtils::setSearchPaths(const std::vector<std::string>& searchPaths)
         _searchPathArray.push_back(_defaultResRootPath);
     }
 }
-
+//_searchPathArray中加入一个路径，front为真加入到前面，优先被索引到。
 void FileUtils::addSearchPath(const std::string &searchpath,const bool front)
 {
     std::string prefix;
